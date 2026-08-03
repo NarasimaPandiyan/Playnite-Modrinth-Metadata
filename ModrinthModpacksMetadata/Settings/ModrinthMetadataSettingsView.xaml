@@ -1,0 +1,91 @@
+<UserControl x:Class="ModrinthModpacksMetadata.Settings.ModrinthMetadataSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="650">
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Margin" Value="0,4,0,4" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,2,0,10" />
+            <Setter Property="Height" Value="26" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+            <TextBlock Text="Modrinth Modpacks Metadata Settings" FontSize="18" FontWeight="Bold" Margin="0,0,0,15" />
+
+            <!-- Search Options Group -->
+            <Border BorderBrush="{DynamicResource NormalBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Search Configuration" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+                    <TextBlock Text="Project Type Filter:" FontWeight="Medium" Margin="0,2,0,2" />
+                    <ComboBox SelectedValue="{Binding ProjectType}" SelectedValuePath="Tag">
+                        <ComboBoxItem Content="Modpacks Only (Recommended)" Tag="modpack" />
+                        <ComboBoxItem Content="Modpacks &amp; Mods" Tag="modpack,mod" />
+                        <ComboBoxItem Content="All Projects" Tag="all" />
+                    </ComboBox>
+
+                    <TextBlock Text="Max Search Results:" FontWeight="Medium" Margin="0,2,0,2" />
+                    <ComboBox SelectedValue="{Binding MaxSearchResults}" SelectedValuePath="Tag">
+                        <ComboBoxItem Content="5 Results" Tag="5" />
+                        <ComboBoxItem Content="10 Results (Default)" Tag="10" />
+                        <ComboBoxItem Content="20 Results" Tag="20" />
+                    </ComboBox>
+                </StackPanel>
+            </Border>
+
+            <!-- Media Options Group -->
+            <Border BorderBrush="{DynamicResource NormalBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Images &amp; Descriptions" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+                    <TextBlock Text="Cover Image Source:" FontWeight="Medium" Margin="0,2,0,2" />
+                    <ComboBox SelectedValue="{Binding CoverSource}" SelectedValuePath="Tag">
+                        <ComboBoxItem Content="Project Icon (Default)" Tag="Icon" />
+                        <ComboBoxItem Content="First Featured Gallery Image" Tag="Gallery" />
+                    </ComboBox>
+
+                    <TextBlock Text="Background Image Source:" FontWeight="Medium" Margin="0,2,0,2" />
+                    <ComboBox SelectedValue="{Binding BackgroundSource}" SelectedValuePath="Tag">
+                        <ComboBoxItem Content="First Featured Gallery Image (Default)" Tag="Gallery" />
+                        <ComboBoxItem Content="Project Icon" Tag="Icon" />
+                    </ComboBox>
+
+                    <CheckBox IsChecked="{Binding UseFullMarkdownDescription}" 
+                              Content="Convert full Markdown body to HTML for detailed game descriptions" 
+                              ToolTip="If unchecked, only the short 1-line project summary will be used." />
+                </StackPanel>
+            </Border>
+
+            <!-- Tags & Developers Options Group -->
+            <Border BorderBrush="{DynamicResource NormalBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="15" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Tags &amp; Developer Options" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+                    <CheckBox IsChecked="{Binding AddModloaderTags}" 
+                              Content="Add Modloader Tags (e.g. Fabric, Forge, NeoForge, Quilt)" />
+
+                    <CheckBox IsChecked="{Binding AddEnvironmentTags}" 
+                              Content="Add Environment Tags (e.g. Client: Required, Server: Optional)" />
+
+                    <CheckBox IsChecked="{Binding AddMinecraftVersionTags}" 
+                              Content="Add Minecraft Version Tags (e.g. MC 1.20.1)" />
+
+                    <CheckBox IsChecked="{Binding FetchTeamMembers}" 
+                              Content="Fetch full team member usernames as developers/publishers" 
+                              ToolTip="Queries the Modrinth team API to list all contributors." />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
