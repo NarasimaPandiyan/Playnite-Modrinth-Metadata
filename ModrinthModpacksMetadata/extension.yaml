@@ -2,7 +2,7 @@ Id: ModrinthModpacks_Metadata_Plugin
 Name: Modrinth Modpacks
 Author: Antigravity
 Version: 1.0.0
-Type: Metadata
+Type: MetadataProvider
 Module: ModrinthModpacksMetadata.dll
 Icon: icon.png
 UserAgreement:
