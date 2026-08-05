@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="PlayniteSDK" Version="6.11.0" PrivateAssets="All" ExcludeAssets="runtime" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" PrivateAssets="All" ExcludeAssets="runtime" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" PrivateAssets="All" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
