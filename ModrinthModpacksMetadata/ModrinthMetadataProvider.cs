@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ModrinthModpacksMetadata.Models;
 using ModrinthModpacksMetadata.Services;
@@ -46,6 +47,37 @@ namespace ModrinthModpacksMetadata
             MetadataField.ReleaseDate
         };
 
+        private static string CleanSearchQuery(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return string.Empty;
+            }
+
+            string cleaned = query.Trim();
+
+            // Strips leading "minecraft", "minecraft:", "minecraft -", "minecraft --" case-insensitively
+            cleaned = Regex.Replace(cleaned, @"^minecraft\s*[:\-]*\s*", "", RegexOptions.IgnoreCase);
+
+            // Strips "(minecraft)" or "- minecraft" at the end
+            cleaned = Regex.Replace(cleaned, @"\s*[\(\-]?\s*minecraft\s*[\)]?$", "", RegexOptions.IgnoreCase);
+
+            cleaned = cleaned.Trim();
+            return string.IsNullOrWhiteSpace(cleaned) ? query.Trim() : cleaned;
+        }
+
+        private static string GetHighResImageUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return url;
+            }
+
+            // Strip size suffixes like _96.png, _128.png, _305.webp, _400.png, _96.webp, _512.webp etc.
+            // to fetch the original high-resolution image from Modrinth CDN.
+            return Regex.Replace(url, @"_\d{2,4}\.(png|jpg|jpeg|webp)$", ".$1", RegexOptions.IgnoreCase);
+        }
+
         private ModrinthProject GetProject()
         {
             if (projectLoaded)
@@ -59,7 +91,8 @@ namespace ModrinthModpacksMetadata
             {
                 if (options.IsBackgroundDownload)
                 {
-                    string queryName = options.GameData.Name;
+                    string rawQuery = options.GameData.Name;
+                    string queryName = CleanSearchQuery(rawQuery);
                     if (string.IsNullOrWhiteSpace(queryName))
                     {
                         return null;
@@ -68,7 +101,7 @@ namespace ModrinthModpacksMetadata
                     var searchResponse = Task.Run(() => client.SearchProjectsAsync(queryName, settings.ProjectType, settings.MaxSearchResults)).GetAwaiter().GetResult();
                     if (searchResponse?.Hits == null || searchResponse.Hits.Count == 0)
                     {
-                        logger.Info($"No Modrinth results found for background query: '{queryName}'");
+                        logger.Info($"No Modrinth results found for background query: '{queryName}' (raw: '{rawQuery}')");
                         return null;
                     }
 
@@ -76,7 +109,8 @@ namespace ModrinthModpacksMetadata
                     string sanitizedQuery = queryName.Trim().ToLowerInvariant().Replace(" ", "-");
                     var exactHit = searchResponse.Hits.FirstOrDefault(h => 
                         string.Equals(h.Slug, sanitizedQuery, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(h.Title, queryName, StringComparison.OrdinalIgnoreCase)) 
+                        string.Equals(h.Title, queryName, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(h.Title, rawQuery, StringComparison.OrdinalIgnoreCase)) 
                         ?? searchResponse.Hits.FirstOrDefault();
 
                     if (exactHit != null)
@@ -87,7 +121,7 @@ namespace ModrinthModpacksMetadata
                 else
                 {
                     // Interactive / manual metadata download
-                    string initialQuery = options.GameData?.Name ?? string.Empty;
+                    string initialQuery = CleanSearchQuery(options.GameData?.Name ?? string.Empty);
 
                     List<GenericItemOption> SearchFunction(string query)
                     {
@@ -96,7 +130,8 @@ namespace ModrinthModpacksMetadata
                             return new List<GenericItemOption>();
                         }
 
-                        var results = Task.Run(() => client.SearchProjectsAsync(query, settings.ProjectType, settings.MaxSearchResults)).GetAwaiter().GetResult();
+                        string cleanedQuery = CleanSearchQuery(query);
+                        var results = Task.Run(() => client.SearchProjectsAsync(cleanedQuery, settings.ProjectType, settings.MaxSearchResults)).GetAwaiter().GetResult();
                         if (results?.Hits == null)
                         {
                             return new List<GenericItemOption>();
@@ -156,13 +191,13 @@ namespace ModrinthModpacksMetadata
                 var featured = project.Gallery.FirstOrDefault(g => g.Featured) ?? project.Gallery.FirstOrDefault();
                 if (featured != null && !string.IsNullOrWhiteSpace(featured.Url))
                 {
-                    return new MetadataFile(featured.Url);
+                    return new MetadataFile(GetHighResImageUrl(featured.Url));
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(project.IconUrl))
             {
-                return new MetadataFile(project.IconUrl);
+                return new MetadataFile(GetHighResImageUrl(project.IconUrl));
             }
 
             return base.GetCoverImage(args);
@@ -181,13 +216,13 @@ namespace ModrinthModpacksMetadata
                 var featured = project.Gallery.FirstOrDefault(g => g.Featured) ?? project.Gallery.FirstOrDefault();
                 if (featured != null && !string.IsNullOrWhiteSpace(featured.Url))
                 {
-                    return new MetadataFile(featured.Url);
+                    return new MetadataFile(GetHighResImageUrl(featured.Url));
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(project.IconUrl))
             {
-                return new MetadataFile(project.IconUrl);
+                return new MetadataFile(GetHighResImageUrl(project.IconUrl));
             }
 
             return base.GetBackgroundImage(args);
@@ -198,7 +233,7 @@ namespace ModrinthModpacksMetadata
             var project = GetProject();
             if (project != null && !string.IsNullOrWhiteSpace(project.IconUrl))
             {
-                return new MetadataFile(project.IconUrl);
+                return new MetadataFile(GetHighResImageUrl(project.IconUrl));
             }
 
             return base.GetIcon(args);
