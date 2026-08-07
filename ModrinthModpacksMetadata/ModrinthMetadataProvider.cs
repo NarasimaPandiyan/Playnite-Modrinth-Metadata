@@ -73,9 +73,20 @@ namespace ModrinthModpacksMetadata
                 return url;
             }
 
-            // Strip size suffixes like _96.png, _128.png, _305.webp, _400.png, _96.webp, _512.webp etc.
-            // to fetch the original high-resolution image from Modrinth CDN.
-            return Regex.Replace(url, @"_\d{2,4}\.(png|jpg|jpeg|webp)$", ".$1", RegexOptions.IgnoreCase);
+            string highRes = url.Trim();
+
+            // Strip query string parameters if any
+            int queryIdx = highRes.IndexOf('?');
+            if (queryIdx > 0)
+            {
+                highRes = highRes.Substring(0, queryIdx);
+            }
+
+            // Strip Modrinth CDN thumbnail size suffixes (e.g. _305.webp -> .webp, _128.png -> .png, _thumb, _small, _large)
+            // to retrieve the full high-resolution original image uploaded by the author.
+            highRes = Regex.Replace(highRes, @"_(\d{2,4}|thumb|thumbnail|small|medium|large)\.(png|jpg|jpeg|webp|gif)$", ".$2", RegexOptions.IgnoreCase);
+
+            return highRes;
         }
 
         private ModrinthProject GetProject()
@@ -188,7 +199,7 @@ namespace ModrinthModpacksMetadata
 
             if (settings.CoverSource == "Gallery" && project.Gallery != null && project.Gallery.Count > 0)
             {
-                var featured = project.Gallery.FirstOrDefault(g => g.Featured) ?? project.Gallery.FirstOrDefault();
+                var featured = project.Gallery.FirstOrDefault(g => g.Featured) ?? project.Gallery.OrderBy(g => g.Ordering).FirstOrDefault();
                 if (featured != null && !string.IsNullOrWhiteSpace(featured.Url))
                 {
                     return new MetadataFile(GetHighResImageUrl(featured.Url));
@@ -213,7 +224,7 @@ namespace ModrinthModpacksMetadata
 
             if (settings.BackgroundSource == "Gallery" && project.Gallery != null && project.Gallery.Count > 0)
             {
-                var featured = project.Gallery.FirstOrDefault(g => g.Featured) ?? project.Gallery.FirstOrDefault();
+                var featured = project.Gallery.FirstOrDefault(g => g.Featured) ?? project.Gallery.OrderBy(g => g.Ordering).FirstOrDefault();
                 if (featured != null && !string.IsNullOrWhiteSpace(featured.Url))
                 {
                     return new MetadataFile(GetHighResImageUrl(featured.Url));
