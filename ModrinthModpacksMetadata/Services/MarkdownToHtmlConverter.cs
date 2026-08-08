@@ -61,11 +61,29 @@ namespace ModrinthModpacksMetadata.Services
                 "",
                 RegexOptions.IgnoreCase);
 
-            // 4. Handle Markdown image inside Markdown link: [![alt](imgurl)](linkurl)
+            // 4. Convert WebP image URLs to PNG via wsrv.nl proxy (since Playnite MSHTML cannot decode raw WebP images)
+            text = Regex.Replace(
+                text,
+                @"(src=[""']|!\[.*?\]\()(https?://[^""'\)]+?\.(?:webp)(?:\?[^""'\)]*)?)([""']|\))",
+                m =>
+                {
+                    string prefix = m.Groups[1].Value;
+                    string originalUrl = m.Groups[2].Value;
+                    string suffix = m.Groups[3].Value;
+                    if (originalUrl.StartsWith("https://wsrv.nl/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return m.Value;
+                    }
+                    string proxiedUrl = $"https://wsrv.nl/?url={Uri.EscapeDataString(originalUrl)}&output=png";
+                    return $"{prefix}{proxiedUrl}{suffix}";
+                },
+                RegexOptions.IgnoreCase);
+
+            // 5. Handle Markdown image inside Markdown link: [![alt](imgurl)](linkurl)
             text = Regex.Replace(
                 text,
                 @"\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)",
-                "<a href=\"$3\" target=\"_blank\"><img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" onerror=\"this.style.display='none';\" /></a>",
+                "<a href=\"$3\" target=\"_blank\"><img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" /></a>",
                 RegexOptions.IgnoreCase);
 
             var sb = new StringBuilder();
@@ -159,9 +177,6 @@ namespace ModrinthModpacksMetadata.Services
                     string trimmed = line.TrimStart();
                     string processedLine = ProcessInline(line);
 
-                    // Add onerror="this.style.display='none';" to any raw <img> tags to hide broken 404 images
-                    processedLine = AddOnErrorToImgTags(processedLine);
-
                     // If line is already an HTML block tag or element, don't double-wrap in <p>...</p>
                     if (IsHtmlTag(trimmed))
                     {
@@ -184,28 +199,6 @@ namespace ModrinthModpacksMetadata.Services
             }
 
             return sb.ToString();
-        }
-
-        private static string AddOnErrorToImgTags(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text) || !text.ToLowerInvariant().Contains("<img"))
-            {
-                return text;
-            }
-
-            return Regex.Replace(
-                text,
-                @"<img\s+([^>]*?)>",
-                m =>
-                {
-                    string tag = m.Value;
-                    if (!tag.ToLowerInvariant().Contains("onerror="))
-                    {
-                        return tag.Insert(4, " onerror=\"this.style.display='none';\" ");
-                    }
-                    return tag;
-                },
-                RegexOptions.IgnoreCase);
         }
 
         private static string FormatIframeReplacement(string src)
@@ -252,7 +245,7 @@ namespace ModrinthModpacksMetadata.Services
             });
 
             // 2. Standalone Markdown Images ![alt](url) -> <img src="url" alt="alt" />
-            text = Regex.Replace(text, @"!\[([^\]]*)\]\(([^)]+)\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" onerror=\"this.style.display='none';\" />");
+            text = Regex.Replace(text, @"!\[([^\]]*)\]\(([^)]+)\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" />");
 
             // 3. Standalone Markdown Links [text](url) -> <a href="url">text</a>
             text = Regex.Replace(text, @"(?<![=\>])\[([^\]]+)\]\(([^)]+)\)", "<a href=\"$2\" target=\"_blank\">$1</a>");
