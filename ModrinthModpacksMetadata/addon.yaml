@@ -3,8 +3,8 @@ Type: MetadataProvider
 Name: Modrinth Modpacks
 Author: NarasimaPandiyan
 ShortDescription: Download metadata for Minecraft Modpacks directly from Modrinth.
-InstallerManifestUrl: https://raw.githubusercontent.com/YourUsername/Playnite-Modrinth-Metadata/main/ModrinthModpacksMetadata/installer.yaml
-SourceUrl: https://github.com/YourUsername/Playnite-Modrinth-Metadata
+InstallerManifestUrl: https://raw.githubusercontent.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/main/ModrinthModpacksMetadata/installer.yaml
+SourceUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata
 Description: |
   Fetches rich metadata for Minecraft Modpacks from the official Modrinth API v2 (Labrinth).
 
@@ -19,4 +19,4 @@ Tags:
   - Modpack
   - Modrinth
   - Minecraft
-IconUrl: https://raw.githubusercontent.com/YourUsername/Playnite-Modrinth-Metadata/main/ModrinthModpacksMetadata/icon.png
+IconUrl: https://raw.githubusercontent.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/main/ModrinthModpacksMetadata/icon.png
