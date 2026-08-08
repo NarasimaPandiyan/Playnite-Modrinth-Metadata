@@ -16,7 +16,7 @@ namespace ModrinthModpacksMetadata.Services
 
             string text = markdown.Replace("\r\n", "\n");
 
-            // Fix GitHub blob image URLs -> raw.githubusercontent.com
+            // 1. Fix GitHub blob image URLs -> raw.githubusercontent.com
             text = Regex.Replace(
                 text,
                 @"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*?\.(png|jpg|jpeg|webp|gif))(\?raw=true)?",
@@ -29,7 +29,7 @@ namespace ModrinthModpacksMetadata.Services
                 "https://raw.githubusercontent.com/$1/$2/$3/$4",
                 RegexOptions.IgnoreCase);
 
-            // Convert unsupported <iframe ...> embeds (e.g. YouTube) into clean clickable links
+            // 2. Convert unsupported <iframe ...> embeds (e.g. YouTube) into clean clickable links
             text = Regex.Replace(
                 text,
                 @"<iframe[^>]*src=[""']([^""']+)[""'][^>]*>.*?</iframe>",
@@ -42,11 +42,30 @@ namespace ModrinthModpacksMetadata.Services
                 m => FormatIframeReplacement(m.Groups[1].Value),
                 RegexOptions.IgnoreCase);
 
-            // Handle Markdown image inside Markdown link: [![alt](imgurl)](linkurl)
+            // 3. Convert Shields.io & SVG badge images (unsupported vector formats in Playnite MSHTML) into clean text badges
+            text = Regex.Replace(
+                text,
+                @"<img[^>]*src=[""'][^""']*(?:img\.shields\.io|\.svg)[^""']*[""'][^>]*alt=[""']([^""']+)[""'][^>]*>",
+                "<b>[ $1 ]</b>",
+                RegexOptions.IgnoreCase);
+
+            text = Regex.Replace(
+                text,
+                @"<img[^>]*alt=[""']([^""']+)[""'][^>]*src=[""'][^""']*(?:img\.shields\.io|\.svg)[^""']*[""'][^>]*>",
+                "<b>[ $1 ]</b>",
+                RegexOptions.IgnoreCase);
+
+            text = Regex.Replace(
+                text,
+                @"<img[^>]*src=[""'][^""']*(?:img\.shields\.io|\.svg)[^""']*[""'][^>]*>",
+                "",
+                RegexOptions.IgnoreCase);
+
+            // 4. Handle Markdown image inside Markdown link: [![alt](imgurl)](linkurl)
             text = Regex.Replace(
                 text,
                 @"\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)",
-                "<a href=\"$3\" target=\"_blank\"><img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" /></a>",
+                "<a href=\"$3\" target=\"_blank\"><img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" onerror=\"this.style.display='none';\" /></a>",
                 RegexOptions.IgnoreCase);
 
             var sb = new StringBuilder();
@@ -140,6 +159,9 @@ namespace ModrinthModpacksMetadata.Services
                     string trimmed = line.TrimStart();
                     string processedLine = ProcessInline(line);
 
+                    // Add onerror="this.style.display='none';" to any raw <img> tags to hide broken 404 images
+                    processedLine = AddOnErrorToImgTags(processedLine);
+
                     // If line is already an HTML block tag or element, don't double-wrap in <p>...</p>
                     if (IsHtmlTag(trimmed))
                     {
@@ -162,6 +184,28 @@ namespace ModrinthModpacksMetadata.Services
             }
 
             return sb.ToString();
+        }
+
+        private static string AddOnErrorToImgTags(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || !text.ToLowerInvariant().Contains("<img"))
+            {
+                return text;
+            }
+
+            return Regex.Replace(
+                text,
+                @"<img\s+([^>]*?)>",
+                m =>
+                {
+                    string tag = m.Value;
+                    if (!tag.ToLowerInvariant().Contains("onerror="))
+                    {
+                        return tag.Insert(4, " onerror=\"this.style.display='none';\" ");
+                    }
+                    return tag;
+                },
+                RegexOptions.IgnoreCase);
         }
 
         private static string FormatIframeReplacement(string src)
@@ -208,7 +252,7 @@ namespace ModrinthModpacksMetadata.Services
             });
 
             // 2. Standalone Markdown Images ![alt](url) -> <img src="url" alt="alt" />
-            text = Regex.Replace(text, @"!\[([^\]]*)\]\(([^)]+)\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" />");
+            text = Regex.Replace(text, @"!\[([^\]]*)\]\(([^)]+)\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" onerror=\"this.style.display='none';\" />");
 
             // 3. Standalone Markdown Links [text](url) -> <a href="url">text</a>
             text = Regex.Replace(text, @"(?<![=\>])\[([^\]]+)\]\(([^)]+)\)", "<a href=\"$2\" target=\"_blank\">$1</a>");
