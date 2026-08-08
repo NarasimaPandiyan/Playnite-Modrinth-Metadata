@@ -1,9 +1,19 @@
 # 🎮 Modrinth Modpacks Metadata Plugin for Playnite
 
-[![GitHub Release](https://img.shields.io/github/v/release/NarasimaPandiyan/Playnite-Modrinth-Metadata?color=7289da&label=Release&logo=github)](https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/latest)
-[![Playnite SDK](https://img.shields.io/badge/PlayniteSDK-6.11.0-blue.svg)](https://playnite.link)
-[![Framework](https://img.shields.io/badge/.NET%20Framework-4.6.2-purple.svg)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/latest">
+    <img src="https://shieldcn.dev/github/release/NarasimaPandiyan/Playnite-Modrinth-Metadata.svg?variant=secondary&theme=zinc" alt="GitHub Release" />
+  </a>
+  <a href="https://playnite.link">
+    <img src="https://shieldcn.dev/badge/PlayniteSDK-6.11.0-blue.svg?variant=secondary" alt="Playnite SDK" />
+  </a>
+  <a href="https://dotnet.microsoft.com/">
+    <img src="https://shieldcn.dev/badge/.NET%20Framework-4.6.2-purple.svg?variant=secondary" alt="Framework" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://shieldcn.dev/github/license/NarasimaPandiyan/Playnite-Modrinth-Metadata.svg?variant=secondary" alt="License" />
+  </a>
+</p>
 
 A high-performance metadata provider extension for **Playnite** that automatically fetches rich metadata, high-resolution artwork, and formatted descriptions for **Minecraft modpacks** directly from the **Modrinth API**.
 
@@ -81,3 +91,4 @@ This project is licensed under the [MIT License](LICENSE).
 
 - Built for [Playnite](https://playnite.link) by Josef Nemec.
 - Powered by the open [Modrinth API](https://docs.modrinth.com/api-spec).
+- Badges powered by [shieldcn](https://shieldcn.dev).
