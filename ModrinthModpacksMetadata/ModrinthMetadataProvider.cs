@@ -56,13 +56,18 @@ namespace ModrinthModpacksMetadata
 
             string cleaned = query.Trim();
 
+            // Strip trademark, registered, copyright, service mark symbols
+            cleaned = Regex.Replace(cleaned, @"[™®©℠]", "");
+
             // Strips leading "minecraft", "minecraft:", "minecraft -", "minecraft --" case-insensitively
             cleaned = Regex.Replace(cleaned, @"^minecraft\s*[:\-]*\s*", "", RegexOptions.IgnoreCase);
 
             // Strips "(minecraft)" or "- minecraft" at the end
             cleaned = Regex.Replace(cleaned, @"\s*[\(\-]?\s*minecraft\s*[\)]?$", "", RegexOptions.IgnoreCase);
 
-            cleaned = cleaned.Trim();
+            // Normalize multiple spaces
+            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
+
             return string.IsNullOrWhiteSpace(cleaned) ? query.Trim() : cleaned;
         }
 
