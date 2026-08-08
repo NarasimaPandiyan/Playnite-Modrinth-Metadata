@@ -1,5 +1,11 @@
 AddonId: ModrinthModpacks_Metadata_Plugin
 Packages:
+  - Version: 1.0.1
+    PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.1/ModrinthModpacksMetadata_v1.0.1.pext
+    Changelog:
+      - Fix HTML tag corruption in Markdown description (target=_blank).
+      - Convert GitHub blob image URLs to raw.githubusercontent.com for reliable rendering.
+      - Replace unsupported YouTube iframes with clean clickable video links.
   - Version: 1.0.0
     PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.0/ModrinthModpacksMetadata_v1.0.0.pext
     Changelog:

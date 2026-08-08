@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -13,8 +14,43 @@ namespace ModrinthModpacksMetadata.Services
                 return string.Empty;
             }
 
+            string text = markdown.Replace("\r\n", "\n");
+
+            // Fix GitHub blob image URLs -> raw.githubusercontent.com
+            text = Regex.Replace(
+                text,
+                @"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*?\.(png|jpg|jpeg|webp|gif))(\?raw=true)?",
+                "https://raw.githubusercontent.com/$1/$2/$3/$4",
+                RegexOptions.IgnoreCase);
+
+            text = Regex.Replace(
+                text,
+                @"https://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*?)\?raw=true",
+                "https://raw.githubusercontent.com/$1/$2/$3/$4",
+                RegexOptions.IgnoreCase);
+
+            // Convert unsupported <iframe ...> embeds (e.g. YouTube) into clean clickable links
+            text = Regex.Replace(
+                text,
+                @"<iframe[^>]*src=[""']([^""']+)[""'][^>]*>.*?</iframe>",
+                m => FormatIframeReplacement(m.Groups[1].Value),
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            text = Regex.Replace(
+                text,
+                @"<iframe[^>]*src=[""']([^""']+)[""'][^>]*/>",
+                m => FormatIframeReplacement(m.Groups[1].Value),
+                RegexOptions.IgnoreCase);
+
+            // Handle Markdown image inside Markdown link: [![alt](imgurl)](linkurl)
+            text = Regex.Replace(
+                text,
+                @"\[!\[([^\]]*)\]\(([^)]+)\)\]\(([^)]+)\)",
+                "<a href=\"$3\" target=\"_blank\"><img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" /></a>",
+                RegexOptions.IgnoreCase);
+
             var sb = new StringBuilder();
-            var lines = markdown.Replace("\r\n", "\n").Split('\n');
+            var lines = text.Split('\n');
             bool inList = false;
             bool inCodeBlock = false;
 
@@ -22,7 +58,7 @@ namespace ModrinthModpacksMetadata.Services
             {
                 string line = rawLine;
 
-                // Code blocks
+                // Code blocks ```
                 if (line.TrimStart().StartsWith("```"))
                 {
                     if (inCodeBlock)
@@ -49,7 +85,7 @@ namespace ModrinthModpacksMetadata.Services
                     continue;
                 }
 
-                // Unordered Lists
+                // Unordered Lists (- item, * item)
                 var listMatch = Regex.Match(line, @"^\s*[\-\*\+]\s+(.*)$");
                 if (listMatch.Success)
                 {
@@ -68,7 +104,7 @@ namespace ModrinthModpacksMetadata.Services
                     inList = false;
                 }
 
-                // Headers
+                // Headers (# Header)
                 var headerMatch = Regex.Match(line, @"^(#{1,6})\s+(.*)$");
                 if (headerMatch.Success)
                 {
@@ -78,7 +114,7 @@ namespace ModrinthModpacksMetadata.Services
                     continue;
                 }
 
-                // Blockquotes
+                // Blockquotes (> quote)
                 var quoteMatch = Regex.Match(line, @"^\s*>\s*(.*)$");
                 if (quoteMatch.Success)
                 {
@@ -94,15 +130,25 @@ namespace ModrinthModpacksMetadata.Services
                     continue;
                 }
 
-                // Regular lines / Paragraphs
+                // Empty / Regular lines
                 if (string.IsNullOrWhiteSpace(line))
                 {
                     sb.AppendLine("<br />");
                 }
                 else
                 {
-                    string content = ProcessInline(line);
-                    sb.AppendLine($"<p>{content}</p>");
+                    string trimmed = line.TrimStart();
+                    string processedLine = ProcessInline(line);
+
+                    // If line is already an HTML block tag or element, don't double-wrap in <p>...</p>
+                    if (IsHtmlTag(trimmed))
+                    {
+                        sb.AppendLine(processedLine);
+                    }
+                    else
+                    {
+                        sb.AppendLine($"<p>{processedLine}</p>");
+                    }
                 }
             }
 
@@ -118,27 +164,70 @@ namespace ModrinthModpacksMetadata.Services
             return sb.ToString();
         }
 
+        private static string FormatIframeReplacement(string src)
+        {
+            if (string.IsNullOrWhiteSpace(src)) return string.Empty;
+
+            // Check for YouTube embeds
+            var ytMatch = Regex.Match(src, @"(?:embed/|v=)([\w\-]+)", RegexOptions.IgnoreCase);
+            if (ytMatch.Success)
+            {
+                string videoId = ytMatch.Groups[1].Value;
+                return $"<p align=\"center\"><a href=\"https://www.youtube.com/watch?v={videoId}\" target=\"_blank\"><b>&#9654; Watch Video on YouTube</b></a></p>";
+            }
+
+            return $"<p align=\"center\"><a href=\"{src}\" target=\"_blank\">View Embedded Content</a></p>";
+        }
+
+        private static bool IsHtmlTag(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return false;
+            string lower = line.ToLowerInvariant();
+            return lower.StartsWith("<p") || lower.StartsWith("</p") ||
+                   lower.StartsWith("<div") || lower.StartsWith("</div") ||
+                   lower.StartsWith("<a ") || lower.StartsWith("</a>") ||
+                   lower.StartsWith("<img") ||
+                   lower.StartsWith("<h1") || lower.StartsWith("<h2") || lower.StartsWith("<h3") ||
+                   lower.StartsWith("<h4") || lower.StartsWith("<h5") || lower.StartsWith("<h6") ||
+                   lower.StartsWith("<ul") || lower.StartsWith("<ol") || lower.StartsWith("<li") ||
+                   lower.StartsWith("<table") || lower.StartsWith("<tr") || lower.StartsWith("<td") ||
+                   lower.StartsWith("<blockquote") || lower.StartsWith("<hr") ||
+                   lower.StartsWith("<!--");
+        }
+
         private static string ProcessInline(string input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
 
-            // Escape HTML characters before converting markdown tags
-            string text = input;
+            // 1. Mask existing HTML tags so Markdown regexes don't corrupt HTML attributes (like target="_blank" or image src URLs)
+            var htmlTags = new List<string>();
+            string text = Regex.Replace(input, @"<[^>]+>", m =>
+            {
+                htmlTags.Add(m.Value);
+                return $"\x1AHTML_{htmlTags.Count - 1}\x1A";
+            });
 
-            // Images ![alt](url) -> <img src="url" alt="alt" />
+            // 2. Standalone Markdown Images ![alt](url) -> <img src="url" alt="alt" />
             text = Regex.Replace(text, @"!\[([^\]]*)\]\(([^)]+)\)", "<img src=\"$2\" alt=\"$1\" style=\"max-width:100%;\" />");
 
-            // Links [text](url) -> <a href="url">text</a>
-            text = Regex.Replace(text, @"\[([^\]]+)\]\(([^)]+)\)", "<a href=\"$2\">$1</a>");
+            // 3. Standalone Markdown Links [text](url) -> <a href="url">text</a>
+            text = Regex.Replace(text, @"(?<![=\>])\[([^\]]+)\]\(([^)]+)\)", "<a href=\"$2\" target=\"_blank\">$1</a>");
 
-            // Bold **text** or __text__
-            text = Regex.Replace(text, @"(\*\*|__)(.*?)\1", "<b>$2</b>");
+            // 4. Bold **text** or __text__
+            text = Regex.Replace(text, @"(?:\*\*|__)(.*?)(?:\*\*|__)", "<b>$1</b>");
 
-            // Italics *text* or _text_
-            text = Regex.Replace(text, @"(\*|_)(.*?)\1", "<i>$2</i>");
+            // 5. Italics *text* or _text_ (strictly requiring word boundaries so _blank or image_names are untouched)
+            text = Regex.Replace(text, @"(?<=\s|^|\()\*([^*]+)\*(?=\s|$|\.|,|\))", "<i>$1</i>");
+            text = Regex.Replace(text, @"(?<=\s|^|\()_([^_]+)_(?=\s|$|\.|,|\))", "<i>$1</i>");
 
-            // Inline code `code`
+            // 6. Inline code `code`
             text = Regex.Replace(text, @"`([^`]+)`", "<code>$1</code>");
+
+            // 7. Restore HTML tags
+            for (int i = 0; i < htmlTags.Count; i++)
+            {
+                text = text.Replace($"\x1AHTML_{i}\x1A", htmlTags[i]);
+            }
 
             return text;
         }
