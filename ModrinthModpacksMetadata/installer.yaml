@@ -1,25 +1,35 @@
 AddonId: ModrinthModpacks_Metadata_Plugin
 Packages:
   - Version: 1.0.4
+    RequiredApiVersion: 6.2.0
+    ReleaseDate: 2026-08-13
     PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.4/ModrinthModpacksMetadata_v1.0.4.pext
     Changelog:
       - Strip special symbols like trademark (™), registered (®), copyright (©), and service mark (℠) before searching Modrinth API.
   - Version: 1.0.3
+    RequiredApiVersion: 6.2.0
+    ReleaseDate: 2026-08-09
     PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.3/ModrinthModpacksMetadata_v1.0.3.pext
     Changelog:
       - Add WebP-to-PNG proxy conversion via wsrv.nl to enable native image rendering in Playnite's MSHTML renderer.
       - Eliminate broken red X placeholders for WebP images.
   - Version: 1.0.2
+    RequiredApiVersion: 6.2.0
+    ReleaseDate: 2026-08-08
     PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.2/ModrinthModpacksMetadata_v1.0.2.pext
     Changelog:
       - Convert SVG badges (Shields.io) into formatted text links to prevent broken image placeholders in MSHTML.
   - Version: 1.0.1
+    RequiredApiVersion: 6.2.0
+    ReleaseDate: 2026-08-08
     PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.1/ModrinthModpacksMetadata_v1.0.1.pext
     Changelog:
       - Fix HTML tag corruption in Markdown description (target=_blank).
       - Convert GitHub blob image URLs to raw.githubusercontent.com for reliable rendering.
       - Replace unsupported YouTube iframes with clean clickable video links.
   - Version: 1.0.0
+    RequiredApiVersion: 6.2.0
+    ReleaseDate: 2026-08-08
     PackageUrl: https://github.com/NarasimaPandiyan/Playnite-Modrinth-Metadata/releases/download/v1.0.0/ModrinthModpacksMetadata_v1.0.0.pext
     Changelog:
       - Initial release with Modrinth modpacks metadata support.
